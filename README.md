@@ -1,4 +1,5 @@
-# Fake_Data_Detection# A Modular Machine Learning Framework for Detecting Fake, Synthetic, and Anomalous Data
+# Fake_Data_Detection
+# A Modular Machine Learning Framework for Detecting Fake, Synthetic, and Anomalous Data
 
 ## Overview
 
@@ -184,3 +185,5 @@ The National Institute of Engineering (NIE), Mysuru
 ## License
 
 This project is developed for academic and educational purposes.
+
+# Fake_Data_Detection
