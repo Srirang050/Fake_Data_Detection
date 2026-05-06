@@ -185,5 +185,3 @@ The National Institute of Engineering (NIE), Mysuru
 ## License
 
 This project is developed for academic and educational purposes.
-
-# Fake_Data_Detection
