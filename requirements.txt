@@ -1,0 +1,16 @@
+torch             # will get the best build for your platform - or install via conda if you prefer
+torchvision
+transformers==4.44.2
+datasets==3.0.1
+sentence-transformers==3.0.1
+scikit-learn
+pandas
+numpy==1.24.3     # safe numpy for many compiled ext; pin to <2 to avoid lots of compiled incompat
+tqdm
+joblib
+evaluate
+safetensors
+streamlit
+altair
+matplotlib
+scipy

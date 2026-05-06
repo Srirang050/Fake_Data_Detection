@@ -1,0 +1,7 @@
+Flask==2.2.5
+gunicorn==20.1.0
+torch==2.0.1           # or the CPU version you used earlier
+torchvision==0.15.2    # matching versions you used
+Pillow==10.0.0
+joblib
+numpy

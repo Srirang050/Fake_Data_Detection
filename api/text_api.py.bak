@@ -1,0 +1,90 @@
+# api/text_api.py
+from flask import Flask, request, jsonify
+import joblib
+import os
+import numpy as np
+from api.text_perplexity import perplexity  # local helper
+
+# config / paths
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
+CLF_PATH = os.path.join(MODEL_DIR, "text_fake_detector_clf.pkl")
+SCALER_PATH = os.path.join(MODEL_DIR, "text_fake_detector_scaler.pkl")
+
+# load classifier + scaler
+clf = joblib.load(CLF_PATH)
+scaler = joblib.load(SCALER_PATH)
+
+app = Flask(__name__)
+
+def extract_simple_features(text: str):
+    words = text.split()
+    num_words = len(words)
+    unique_words = len(set(words))
+    sents = [s.strip() for s in text.split('.') if s.strip()]
+    avg_sentence_length = float(np.mean([len(s.split()) for s in sents])) if sents else 0.0
+    repetition_score = num_words / (unique_words + 1)
+    return [num_words, unique_words, avg_sentence_length, repetition_score]
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status":"ok", "model_loaded": True})
+
+@app.route("/predict_text", methods=["POST"])
+def predict_text():
+    """
+    Expect JSON:
+    { "text": "some review" }
+    Returns JSON:
+    {
+      "label": "real" | "fake",
+      "probability_fake": 0.123,
+      "perplexity": 123.45,
+      "features": { "num_words":..., ... }
+    }
+    """
+    data = request.get_json(force=True)
+    if not data or "text" not in data:
+        return jsonify({"error":"Please POST JSON with key 'text'."}), 400
+
+    text = str(data["text"])
+    # 1) simple features
+    f_simple = extract_simple_features(text)  # list of 4 features
+
+    # 2) perplexity (compute as list)
+    try:
+        ppls = perplexity([text], batch_size=1)
+        ppl = float(ppls[0])
+    except Exception as e:
+        # graceful fallback: mark perplexity as null and proceed
+        ppl = None
+
+    # 3) build final feature vector (order must match training)
+    if ppl is None:
+        # If perplexity failed, we can either return error or set to a sentinel value
+        # Here we choose to return an error (so client knows)
+        return jsonify({"error":"Failed to compute perplexity on server."}), 500
+
+    feats = np.array([f_simple + [ppl]], dtype=float)  # shape (1,5)
+
+    # 4) scale + predict
+    feats_scaled = scaler.transform(feats)
+    pred = clf.predict(feats_scaled)[0]
+    proba_fake = float(clf.predict_proba(feats_scaled)[:,1][0]) if hasattr(clf, "predict_proba") else None
+
+    label = "fake" if int(pred) == 1 else "real"
+
+    return jsonify({
+        "label": label,
+        "probability_fake": proba_fake,
+        "perplexity": float(ppl),
+        "features": {
+            "num_words": int(f_simple[0]),
+            "unique_words": int(f_simple[1]),
+            "avg_sentence_length": float(f_simple[2]),
+            "repetition_score": float(f_simple[3])
+        }
+    })
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5002))
+    app.run(host="0.0.0.0", port=port)

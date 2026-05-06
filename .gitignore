@@ -1,0 +1,21 @@
+# Virtual environments
+dataguard/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Large files
+*.csv
+*.json
+*.pkl
+*.dylib
+
+# Model/results
+models/
+results/
+
+# Mac
+.DS_Store
